@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEMESIS X: Görev Kontrol ve Veri Sistemi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #56d364;
+            --secondary: #ff7043;
+            --bg-dark: #0d1117;
+            --bg-medium: #161b22;
+            --text-light: #c9d1d9;
+            --text-muted: #8b949e;
+            --border: #30363d;
+            --primary-rgb: 86, 211, 100;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* --- NAVİGASYON --- */
+        nav {
+            background: rgba(22, 27, 34, 0.98);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 2px solid var(--primary);
+            box-shadow: 0 5px 25px rgba(0,0,0,0.7);
+        }
+
+        .nav-btn {
+            padding: 14px 35px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9em;
+            cursor: pointer;
+            background: transparent;
+            color: white;
+            border: 1px solid var(--primary);
+            border-radius: 4px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            background: var(--primary);
+            color: var(--bg-dark);
+            box-shadow: 0 0 20px rgba(86, 211, 100, 0.5);
+            transform: translateY(-2px);
+        }
+
+        /* --- SAYFA YAPISI --- */
+        .page-content {
+            display: none;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        .page-content.active { display: block; }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- PROJE BİLGİSİ STİLLERİ (EKSİKSİZ) --- */
+        .info-container {
+            width: 100%;
+            background-color: var(--bg-medium);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            animation: pulse-glow 4s infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 15px rgba(86, 211, 100, 0.2); }
+            100% { box-shadow: 0 0 35px rgba(86, 211, 100, 0.4); }
+        }
+
+        .info-container h1 { font-size: 2.5em; border-bottom: 2px solid var(--primary); padding-bottom: 15px; }
+        .info-container h2 { font-size: 1.8em; margin-top: 40px; border-bottom: 1px dashed var(--border); padding-bottom: 10px; color: var(--primary); }
+        
+        section.slide-box {
+            margin-bottom: 40px;
+            padding: 25px;
+            background-color: #1a2027;
+            border-left: 5px solid var(--primary);
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+        section.slide-box:hover { transform: translateX(10px); background-color: #212832; }
+
+        .ai-component { background: #1a2027; border: 1px solid var(--primary); padding: 20px; border-radius: 8px; margin-top: 20px; }
+        .hardware-info { background: #1a2027; border: 1px solid var(--secondary); padding: 20px; border-radius: 8px; margin-top: 20px; }
+        .quote { font-style: italic; text-align: center; font-size: 1.3em; color: var(--text-muted); padding: 30px; border-top: 1px solid var(--border); }
+
+        /* --- SİMÜLASYON STİLLERİ (EKSİKSİZ) --- */
+        .sim-container { background-color: var(--bg-medium); padding: 25px; border-radius: 10px; }
+        .controls { display: flex; justify-content: center; gap: 20px; margin-bottom: 25px; }
+        .controls button { padding: 12px 25px; font-weight: bold; cursor: pointer; border: none; border-radius: 5px; color: #0d1117; font-family: 'Orbitron'; }
+        #startButton { background-color: #2ea44f; }
+        #stopButton { background-color: #f85149; }
+
+        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .dashboard-item { background: #21262d; padding: 15px; border-radius: 5px; border-left: 3px solid var(--primary); }
+        .dashboard-item span { display: block; font-size: 0.75em; color: var(--text-muted); }
+        .dashboard-item strong { font-size: 1.1em; color: #fff; }
+
+        .map-container { 
+            background-color: #1a0d0a; border: 2px solid #3e2723; border-radius: 8px; 
+            position: relative; overflow: hidden; width: 100%; height: 450px; 
+        }
+        #marsCanvas { cursor: grab; display: block; width: 100%; height: 100%; }
+        .map-legend { position: absolute; bottom: 15px; left: 15px; font-size: 0.7em; background: rgba(0,0,0,0.8); padding: 8px; border-radius: 4px; z-index: 5; }
+        .zoom-info { position: absolute; top: 15px; right: 15px; font-size: 0.8em; background: rgba(0,0,0,0.8); padding: 8px; color: var(--primary); z-index: 5; }
+
+        #logArea { 
+            background: #0d1117; border: 1px solid var(--border); padding: 15px; 
+            height: 250px; overflow-y: auto; margin-top: 20px; border-radius: 5px; 
+            color: var(--primary); font-size: 0.9em; white-space: pre-wrap;
+        }
+        
+        #archiveArea { margin-top: 30px; background: #0d1117; padding: 15px; border-radius: 8px; height: 400px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; color: var(--text-light); }
+        th { background: var(--bg-dark); position: sticky; top: 0; color: var(--primary); text-align: left; padding: 12px; border-bottom: 2px solid var(--border); }
+        td { padding: 10px; border-bottom: 1px solid #21262d; font-size: 0.85em; }
+
+        /* Arka Plan Efekti */
+        .bg-effect {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%);
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-effect"></div>
+
+    <nav>
+        <button class="nav-btn active" onclick="showPage('info-page')">PROJE DOSYASI</button>
+        <button class="nav-btn" onclick="showPage('sim-page')">CANLI SİMÜLASYON</button>
+    </nav>
+
+    <div id="info-page" class="page-content active">
+        <div class="info-container">
+            <h1>NEMESIS X: Otonom Veri Mimarisi</h1>
+            
+            <section class="slide-box">
+                <h2>Giriş ve Proje Vizyonu</h2>
+                <p><strong>Amaç:</strong> Derin uzay keşiflerinde kısıtlı bant genişliği ve yüksek gecikmeyi aşmak için "Edge Computing" ekosistemi kurmak.</p>
+                <p><strong>Felsefe:</strong> "Yerinde analiz et, sadece kritik olanı öncelikli gönder."</p>
+                <p><strong>Kurumsal:</strong> Nilüfer Borsa İstanbul Fen Lisesi Uzay Teknolojileri Ar-Ge Grubu.</p>
+            </section>
+
+            <section class="slide-box">
+                <h2>Problemin Tanımı</h2>
+                <ul>
+                    <li><strong>Gecikme:</strong> Mars-Dünya arası 3-22 dakika sinyal süresi.</li>
+                    <li><strong>Darboğaz:</strong> Verinin sadece %10-15'i iletilebilir.</li>
+                    <li><strong>Risk:</strong> Kritik bilimsel verilerin iletim kuyruğunda silinme tehlikesi.</li>
+                </ul>
+            </section>
+
+            <section class="slide-box">
+                <h2>Akıllı Veri Triyajı (Smart Triage)</h2>
+                <p>Veriler otonom olarak üç katmana ayrılır:</p>
+                <div class="ai-component" style="border-color: #56d364;"><strong>Alpha (Kritik):</strong> Yaşam izi, organik yapılar. Kayıpsız sıkıştırma.</div>
+                <div class="ai-component" style="border-color: #ff7043;"><strong>Beta (Standart):</strong> Jeolojik ve atmosferik veriler. Kayıplı sıkıştırma.</div>
+                <div class="ai-component" style="border-color: #8b949e;"><strong>Gamma (Arşiv):</strong> Tekrarlayan veriler. Sadece yerel SSD saklama.</div>
+            </section>
+
+            <section class="slide-box">
+                <h2>AI: MorphoNet & SpecNet</h2>
+                <div class="ai-component">
+                    <h3>MorphoNet (Görü Analizi)</h3>
+                    <p>Hücresel yapıları ve biyolojik morfolojileri <strong>%94 doğrulukla</strong> tanır.</p>
+                </div>
+                <div class="ai-component">
+                    <h3>SpecNet (Spektral Analiz)</h3>
+                    <p>Kimyasal gürültüyü temizleyerek amino asit ve kompleks polimerleri tespit eder.</p>
+                </div>
+            </section>
+
+            <section class="slide-box">
+                <h2>Donanım Güvenliği ve TMR</h2>
+                <div class="hardware-info">
+                    <h3>Triple Modular Redundancy (TMR)</h3>
+                    <p>Kritik hesaplamalar 3 ayrı çekirdekte yapılır. "Voter" devresi sonuçları karşılaştırarak radyasyon kaynaklı hataları (Bit-Flip) anında düzeltir.</p>
+                </div>
+            </section>
+
+            <section class="slide-box">
+                <h2>Enerji ve Performans</h2>
+                <ul>
+                    <li><strong>Termal Sinerji:</strong> AI işlemci ısısı, "Heat Pipes" ile bataryaları ısıtmak için kullanılır.</li>
+                    <li><strong>Hız:</strong> Sensörden AI kararına kadar geçen süre: <strong>412ms</strong>.</li>
+                    <li><strong>Verim:</strong> 10GB ham veri -> 1.2GB Rafine Bilgi Paketi.</li>
+                </ul>
+            </section>
+
+            <p class="quote">"Geleceğin keşifleri, daha büyük antenlerle değil, daha akıllı verilerle yapılacaktır."</p>
+        </div>
+    </div>
+
+    <div id="sim-page" class="page-content">
+        <div class="sim-container">
+            <h1>Görev Kontrol Paneli</h1>
+            <div class="controls">
+                <button id="startButton">SİMÜLASYONU BAŞLAT</button>
+                <button id="stopButton">SİMÜLASYONU DURDUR</button>
+            </div>
+
+            <div class="dashboard">
+                <div class="dashboard-item"><span>SOL</span><strong id="sol">0</strong></div>
+                <div class="dashboard-item"><span>SAAT</span><strong id="hour">00:00</strong></div>
+                <div class="dashboard-item"><span>PİL (%)</span><strong id="battery">0.0</strong></div>
+                <div class="dashboard-item"><span>KONUM (X,Y)</span><strong id="position">[0.0, 0.0]</strong></div>
+                <div class="dashboard-item"><span>ZEMİN</span><strong id="currentTerrain">-</strong></div>
+                <div class="dashboard-item"><span>TMR HATASI DÜZELTİLEN</span><strong id="errorsFixed">0</strong></div>
+                <div class="dashboard-item"><span>DSN BAĞLANTI</span><strong id="isOrbiterOverhead">Yok</strong></div>
+            </div>
+
+            <div class="map-container">
+                <canvas id="marsCanvas"></canvas>
+                <div class="map-legend">🔴 Rover | 🟠 Rota | 🟢 Bulgular | 🖱️ Scroll: Zoom</div>
+                <div class="zoom-info" id="zoomLevel">Zoom: 100%</div>
+            </div>
+
+            <h2>Olay Günlüğü</h2>
+            <pre id="logArea"></pre>
+
+            <h2>Bilimsel Arşiv (Bulgular)</h2>
+            <div id="archiveArea">
+                <table>
+                    <thead>
+                        <tr><th>SOL</th><th>SAAT</th><th>KONUM</th><th>ZEMİN</th><th>BULGU</th><th>SKOR</th></tr>
+                    </thead>
+                    <tbody id="archiveTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- SAYFA YÖNETİMİ ---
+        function showPage(pageId) {
+            document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            event.currentTarget.classList.add('active');
+            if(pageId === 'sim-page') setupCanvas();
+        }
+
+        // --- SİMÜLASYON MOTORU ---
+        const API_BASE_URL = 'https://nemesis-x-mars.onrender.com';
+        const canvas = document.getElementById('marsCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let roverPath = [];
+        let missionDiscoveries = [];
+        let updateInterval;
+        let zoom = 1.0;
+        const baseScale = 5;
+        let cameraX = 0, cameraY = 0;
+
+        function setupCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = 450;
+        }
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            zoom = e.deltaY < 0 ? Math.min(zoom + 0.1, 5) : Math.max(zoom - 0.1, 0.2);
+            document.getElementById('zoomLevel').textContent = `Zoom: ${Math.round(zoom * 100)}%`;
+        });
+
+        async function updateDashboard() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/get_dashboard_data`);
+                const data = await response.json();
+
+                document.getElementById('sol').textContent = data.sol;
+                document.getElementById('hour').textContent = `${String(data.hour).padStart(2, '0')}:00`;
+                document.getElementById('battery').textContent = data.battery.toFixed(1);
+                document.getElementById('position').textContent = `[${data.position[0].toFixed(1)}, ${data.position[1].toFixed(1)}]`;
+                document.getElementById('currentTerrain').textContent = data.current_terrain;
+                document.getElementById('errorsFixed').textContent = data.errors_fixed;
+                document.getElementById('isOrbiterOverhead').textContent = data.is_orbiter_overhead ? 'AKTİF' : 'YOK';
+
+                const logArea = document.getElementById('logArea');
+                logArea.textContent = data.log_history.join('\n');
+                logArea.scrollTop = logArea.scrollHeight;
+
+                missionDiscoveries = data.mission_archive;
+                updateArchiveTable(data.mission_archive);
+                
+                cameraX = data.position[0];
+                cameraY = data.position[1];
+                
+                drawMap(data);
+            } catch (error) { console.error("Veri alınamadı."); }
+        }
+
+        function drawMap(data) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(zoom, zoom);
+            ctx.translate(-cameraX * baseScale, -cameraY * baseScale);
+
+            // Grid
+            ctx.strokeStyle = "rgba(78, 42, 30, 0.4)";
+            ctx.lineWidth = 1 / zoom;
+            for(let i = -2000; i <= 2000; i += 100) {
+                ctx.beginPath(); ctx.moveTo(i, -2000); ctx.lineTo(i, 2000); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-2000, i); ctx.lineTo(2000, i); ctx.stroke();
+            }
+
+            // Rota
+            const currentPos = { x: data.position[0] * baseScale, y: data.position[1] * baseScale };
+            roverPath.push(currentPos);
+            ctx.beginPath();
+            ctx.strokeStyle = '#ff7043';
+            ctx.lineWidth = 2 / zoom;
+            roverPath.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+            ctx.stroke();
+
+            // Bulgular
+            missionDiscoveries.forEach(item => {
+                ctx.fillStyle = '#56d364';
+                ctx.beginPath();
+                ctx.arc(item.pos[0]*baseScale, item.pos[1]*baseScale, 5/zoom, 0, Math.PI*2);
+                ctx.fill();
+            });
+
+            // Rover
+            ctx.fillStyle = '#f85149';
+            ctx.beginPath();
+            ctx.arc(currentPos.x, currentPos.y, 8/zoom, 0, Math.PI*2);
+            ctx.fill();
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 1/zoom;
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function updateArchiveTable(archive) {
+            const tbody = document.getElementById('archiveTableBody');
+            tbody.innerHTML = '';
+            archive.forEach(item => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = item.sol;
+                row.insertCell().textContent = `${item.hour}:00`;
+                row.insertCell().textContent = `[${item.pos[0].toFixed(1)}, ${item.pos[1].toFixed(1)}]`;
+                row.insertCell().textContent = item.terrain;
+                row.insertCell().textContent = item.type;
+                row.insertCell().textContent = item.val;
+            });
+        }
+
+        document.getElementById('startButton').onclick = () => {
+            fetch(`${API_BASE_URL}/start_simulation`, {method:'POST'});
+            if(!updateInterval) updateInterval = setInterval(updateDashboard, 1000);
+            roverPath = [];
+        };
+
+        document.getElementById('stopButton').onclick = () => {
+            fetch(`${API_BASE_URL}/stop_simulation`, {method:'POST'});
+            clearInterval(updateInterval);
+            updateInterval = null;
+        };
+
+        window.onload = setupCanvas;
+    </script>
+</body>
+</html>
