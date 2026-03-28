@@ -391,56 +391,90 @@
         };
 
         window.onload = setupCanvas;
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-recognition.lang = 'tr-TR';
+        // 1. Ses Tanıma ve Konuşma Ayarları
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'tr-TR';
+    recognition.continuous = false;
+    recognition.interimResults = false;
 
-// Sesli komut butonuna basınca dinlemeyi başlat
-document.getElementById('voiceBtn').onclick = () => {
-    recognition.start();
-    document.getElementById('voiceBtn').textContent = "🔴 DİNLİYORUM...";
-};
+    const voiceBtn = document.getElementById('voiceBtn');
 
-// Ses algılandığında çalışan kısım
-recognition.onresult = (event) => {
-    const metin = event.results[0][0].transcript.toLowerCase();
-    document.getElementById('voiceBtn').textContent = "🎤 SESLİ KOMUT";
-    
-    // İŞTE BURADA FONKSİYONU ÇAĞIRIYORUZ:
-    nemesisKomutSistemi(metin);
-};
-
-// 2. İŞTE O OLMAYAN FONKSİYON (Komutları anlayan kısım)
-function nemesisKomutSistemi(gelenSes) {
-    console.log("Nemesis duydu:", gelenSes);
-
-    // BAŞLAT komutu
-    if (gelenSes.includes("başlat") || gelenSes.includes("başla")) {
-        showPage('sim-page'); // Sayfayı değiştir
-        setTimeout(() => {
-            document.getElementById('startButton').click(); // Butona bas
-            speak("Anlaşıldı. Nemesis X operasyonu başlatıyor.");
-        }, 500);
-    } 
-    
-    // DURDUR komutu
-    else if (gelenSes.includes("durdur") || gelenSes.includes("dur")) {
-        document.getElementById('stopButton').click();
-        speak("Sistem durduruldu.");
+    // 2. Dinleme Başlatma
+    if (voiceBtn) {
+        voiceBtn.onclick = () => {
+            try {
+                recognition.start();
+                voiceBtn.textContent = "🔴 DİNLİYORUM...";
+                voiceBtn.style.background = "rgba(255, 82, 82, 0.3)";
+            } catch (e) {
+                console.log("Zaten dinliyor...");
+            }
+        };
     }
 
-    // DURUM komutu
-    else if (gelenSes.includes("durum") || gelenSes.includes("rapor")) {
-        const pil = document.getElementById('battery').textContent;
-        speak(`Batarya seviyesi yüzde ${pil}. Her şey yolunda.`);
-    }
-}
+    // 3. Ses Algılandığında Ne Yapılacak?
+    recognition.onresult = (event) => {
+        const command = event.results[0][0].transcript.toLowerCase();
+        voiceBtn.textContent = "🎤 SESLİ KOMUT";
+        voiceBtn.style.background = "transparent";
+        
+        console.log("Gelen Komut:", command);
+        processMarsCommand(command);
+    };
 
-// 3. KONUŞMA FONKSİYONU (Nemesis'in cevap vermesi için)
-function speak(yazi) {
-    const mesaj = new SpeechSynthesisUtterance(yazi);
-    mesaj.lang = 'tr-TR';
-    window.speechSynthesis.speak(mesaj);
-}
+    recognition.onerror = () => {
+        voiceBtn.textContent = "🎤 SESLİ KOMUT";
+        voiceBtn.style.background = "transparent";
+    };
+
+    // 4. KOMUT MERKEZİ (Beyin Kısmı)
+    function processMarsCommand(cmd) {
+        // BAŞLATMA KOMUTU
+        if (cmd.includes("başlat") || cmd.includes("başla") || cmd.includes("start")) {
+            // Önce sayfayı simülasyon sayfasına çek
+            showPage('sim-page'); 
+            
+            // Sayfa animasyonunun bitmesi için yarım saniye bekle
+            setTimeout(() => {
+                const startBtn = document.getElementById('startButton');
+                if (startBtn) {
+                    startBtn.click(); // Simülasyonu başlat
+                    speak("Anlaşıldı. Nemesis X operasyonu başlatıyor. Yolunuz açık olsun.");
+                }
+            }, 600);
+        } 
+        
+        // DURDURMA KOMUTU
+        else if (cmd.includes("durdur") || cmd.includes("dur") || cmd.includes("stop")) {
+            const stopBtn = document.getElementById('stopButton');
+            if (stopBtn) {
+                stopBtn.click();
+                speak("Sistem durduruldu. Güvenli moda geçiliyor.");
+            }
+        }
+
+        // RAPOR VERME KOMUTU
+        else if (cmd.includes("durum") || cmd.includes("rapor") || cmd.includes("analiz")) {
+            const pil = document.getElementById('battery')?.textContent || "Bilinmiyor";
+            const zemin = document.getElementById('currentTerrain')?.textContent || "Analiz edilemiyor";
+            speak(`Sistem durumu rapor ediliyor. Batarya yüzde ${pil}. Mevcut zemin yapısı ${zemin}.`);
+        }
+        
+        else {
+            speak("Bu komutu anlayamadım, tekrar eder misin?");
+        }
+    }
+
+    // 5. SESLİ CEVAP FONKSİYONU
+    function speak(text) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'tr-TR';
+        utterance.pitch = 0.8; // Hafif robotik ses tonu
+        utterance.rate = 1;
+        window.speechSynthesis.speak(utterance);
+    }
+</script>
     </script>
 </body>
 </html>
