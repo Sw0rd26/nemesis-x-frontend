@@ -391,61 +391,56 @@
         };
 
         window.onload = setupCanvas;
-        const voiceBtn = document.getElementById('voiceBtn');
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+recognition.lang = 'tr-TR';
 
-        if (SpeechRecognition) {
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'tr-TR'; 
-            recognition.continuous = false;
+// Sesli komut butonuna basınca dinlemeyi başlat
+document.getElementById('voiceBtn').onclick = () => {
+    recognition.start();
+    document.getElementById('voiceBtn').textContent = "🔴 DİNLİYORUM...";
+};
 
-            voiceBtn.onclick = () => {
-                recognition.start();
-                voiceBtn.textContent = "🔴 DİNLİYORUM...";
-                voiceBtn.style.boxShadow = "0 0 15px #ff5252";
-            };
+// Ses algılandığında çalışan kısım
+recognition.onresult = (event) => {
+    const metin = event.results[0][0].transcript.toLowerCase();
+    document.getElementById('voiceBtn').textContent = "🎤 SESLİ KOMUT";
+    
+    // İŞTE BURADA FONKSİYONU ÇAĞIRIYORUZ:
+    nemesisKomutSistemi(metin);
+};
 
-            recognition.onresult = (event) => {
-                const command = event.results[0][0].transcript.toLowerCase();
-                voiceBtn.textContent = "🎤 SESLİ KOMUT";
-                voiceBtn.style.boxShadow = "none";
-                
-                console.log("Nemesis Komut Algıladı:", command);
+// 2. İŞTE O OLMAYAN FONKSİYON (Komutları anlayan kısım)
+function nemesisKomutSistemi(gelenSes) {
+    console.log("Nemesis duydu:", gelenSes);
 
-                // MANTIK KONTROLLERİ
-                if (command.includes("başlat") || command.includes("start")) {
-                    showPage('sim-page'); // Önce sayfayı aç
-                    document.getElementById('startButton').click();
-                    speak("Anlaşıldı. Nemesis X operasyonu başlatıyor. Yolunuz açık olsun.");
-                } 
-                else if (command.includes("durdur") || command.includes("dur")) {
-                    document.getElementById('stopButton').click();
-                    speak("Sistem durduruldu. Beklemeye geçiyorum.");
-                }
-                else if (command.includes("durum") || command.includes("rapor")) {
-                    const zemin = document.getElementById('currentTerrain').textContent;
-                    const pil = document.getElementById('battery').textContent;
-                    const sol = document.getElementById('sol').textContent;
-                    speak(`Mars Günü ${sol}. Batarya yüzde ${pil}. Zemin yapısı ${zemin}. Her şey yolunda.`);
-                }
-                else {
-                    speak("Komut anlaşılamadı. Lütfen tekrar eder misiniz?");
-                }
-            };
+    // BAŞLAT komutu
+    if (gelenSes.includes("başlat") || gelenSes.includes("başla")) {
+        showPage('sim-page'); // Sayfayı değiştir
+        setTimeout(() => {
+            document.getElementById('startButton').click(); // Butona bas
+            speak("Anlaşıldı. Nemesis X operasyonu başlatıyor.");
+        }, 500);
+    } 
+    
+    // DURDUR komutu
+    else if (gelenSes.includes("durdur") || gelenSes.includes("dur")) {
+        document.getElementById('stopButton').click();
+        speak("Sistem durduruldu.");
+    }
 
-            recognition.onerror = () => {
-                voiceBtn.textContent = "🎤 SESLİ KOMUT";
-                voiceBtn.style.boxShadow = "none";
-            };
-        }
+    // DURUM komutu
+    else if (gelenSes.includes("durum") || gelenSes.includes("rapor")) {
+        const pil = document.getElementById('battery').textContent;
+        speak(`Batarya seviyesi yüzde ${pil}. Her şey yolunda.`);
+    }
+}
 
-        function speak(text) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'tr-TR';
-            utterance.pitch = 0.9; // Hafif robotik
-            utterance.rate = 1;
-            window.speechSynthesis.speak(utterance);
-        }
+// 3. KONUŞMA FONKSİYONU (Nemesis'in cevap vermesi için)
+function speak(yazi) {
+    const mesaj = new SpeechSynthesisUtterance(yazi);
+    mesaj.lang = 'tr-TR';
+    window.speechSynthesis.speak(mesaj);
+}
     </script>
 </body>
 </html>
