@@ -292,10 +292,35 @@
             document.getElementById('zoomLevel').textContent = `Zoom: ${Math.round(zoom * 100)}%`;
         });
 
-        async function updateDashboard() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/get_dashboard_data`);
-                const data = await response.json();
+        function updateDashboard() {
+    fetch(`${API_BASE_URL}/get_dashboard_data`)
+        .then(response => response.json())
+        .then(data => {
+            // Mevcut veri yazdırma kodların...
+            document.getElementById('battery').textContent = data.battery.toFixed(1);
+
+            // --- PİL SIFIRLANDIĞINDA RESETLEME KONTROLÜ ---
+            if (data.battery <= 0) {
+                stopSimulation(); // Önce simülasyonu durdur
+                alert("KRİTİK HATA: Batarya tükendi! Sistem yeniden başlatılıyor...");
+                resetSimulationUI(); // Arayüzü sıfırla
+            }
+        });
+}
+
+// Sıfırlama Fonksiyonu
+function resetSimulationUI() {
+    // Backend'e reset isteği gönder (Eğer backend'de /reset endpoint'in varsa)
+    fetch(`${API_BASE_URL}/reset`, { method: 'POST' });
+
+    // Arayüz değerlerini manuel olarak başlangıca çek
+    document.getElementById('battery').textContent = "100";
+    document.getElementById('sol').textContent = "0";
+    document.getElementById('currentTerrain').textContent = "Beklemede";
+    
+    // İstersen otomatik olarak tekrar başlat:
+    // setTimeout(() => { startSimulation(); }, 2000);
+}
 
                 document.getElementById('sol').textContent = data.sol;
                 document.getElementById('hour').textContent = `${String(data.hour).padStart(2, '0')}:00`;
